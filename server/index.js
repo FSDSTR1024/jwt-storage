@@ -1,11 +1,13 @@
 const express = require("express");
 const app = express();
-const dotenv = require("dotenv").config();
+require("dotenv").config();
 const jsonwebtoken = require("jsonwebtoken");
 const users = require("./data/users.dummy.js");
+const cors = require("cors");
 
 const port = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -44,29 +46,56 @@ app.post("/login", (req, res) => {
   return res.status(401).send("Unauthorized");
 });
 
-app.get("/users", (req, res) => {
+const getUserFromHeader = (req) => {
   const token = req.headers.authorization.split(" ")[1];
+  if (!token) throw new Error("A token is necessary");
+  const loggedUser = jsonwebtoken.verify(token, process.env.JWT_SECRET);
+  if (!loggedUser) throw new Error("Invalid token");
+  return loggedUser;
+};
+
+app.use((req, res, next) => {
   try {
-    const loggedUser = jsonwebtoken.verify(token, process.env.JWT_SECRET);
-    if (loggedUser.rol !== "admin") {
-      throw new Error("This end point is only for admins");
-    }
-    res.send(users);
+    const loggedUser = getUserFromHeader(req);
+    req.user = loggedUser;
+    next();
   } catch (error) {
+    console.log({ error });
     return res.status(401).send("Unauthorized");
   }
 });
 
 app.get("/user", (req, res) => {
-  const token = req.headers.authorization.split(" ")[1];
+  const loggedUser = req.user;
   try {
-    const loggedUser = jsonwebtoken.verify(token, process.env.JWT_SECRET);
     const user = users.find((user) => user.id === loggedUser.id);
     return res.send(user);
   } catch (error) {
     console.log(error);
     return res.status(401).send("Unauthorized");
   }
+});
+
+app.use((req, res, next) => {
+  if (req.user.rol !== "admin") {
+    return res.status(401).send("Unauthorized");
+  } else {
+    next();
+  }
+});
+
+app.get("/users", (req, res) => res.send(users));
+
+app.put("/user", (req, res) => {
+  const user = req.body;
+  const loggedUser = req.user;
+  users = user.map((user) => {
+    if (user.id === loggedUser.id) {
+      return req.body;
+    } else {
+      return user;
+    }
+  });
 });
 
 app.listen(port, () => {
