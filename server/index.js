@@ -58,6 +58,7 @@ app.use((req, res, next) => {
   try {
     const loggedUser = getUserFromHeader(req);
     req.user = loggedUser;
+    console.log({ loggedUser });
     next();
   } catch (error) {
     console.log({ error });

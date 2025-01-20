@@ -1,60 +1,34 @@
 import { useEffect, useState } from "react";
+import { UserAPI } from "../api/user";
 import "./App.css";
 
 function App() {
+  //return <Page2 />;
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-
-  useEffect(() => {
-    console.log({ user });
-  }, [user]);
-
-  useEffect(() => {
-    console.log({ email, password });
-  }, [email, password]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    //console.log(email, password);
-    const response = await fetch("http://localhost:3000/login", {
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    const json = await response.json();
-    localStorage.setItem("token", json.token);
-    setToken(json.token);
+    await UserAPI.login(email, password);
+    fetchUser();
   };
 
-  const fetchUser = async (token) => {
-    const response = await fetch("http://localhost:3000/user", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const json = await response.json();
-    console.log({ json });
-    setUser(json);
+  const logout = async () => {
+    await UserAPI.logout();
+    fetchUser();
   };
 
-  const logout = () => {
-    localStorage.removeItem("token");
-    setToken(null);
-    setUser(null);
+  const fetchUser = () => {
+    UserAPI.getUser()
+      .then(setUser)
+      .catch(() => setUser(null));
   };
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setToken(token);
-    }
+    fetchUser();
   }, []);
-
-  useEffect(() => {
-    if (token) {
-      fetchUser(token);
-    }
-  }, [token]);
 
   return (
     <>
