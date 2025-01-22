@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { UserAPI } from "../api/user";
 import "./App.css";
+import Card from "./components/atoms/Card";
+import UserProfile from "./components/atoms/UserProfile";
+import { GlobalContext } from "./context/GlobalContext";
 
 function App() {
   //return <Page2 />;
-
+  const { user, dispatch } = useContext(GlobalContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [user, setUser] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,8 +24,8 @@ function App() {
 
   const fetchUser = () => {
     UserAPI.getUser()
-      .then(setUser)
-      .catch(() => setUser(null));
+      .then((user) => dispatch({ type: "SET_USER", payload: user }))
+      .catch(() => dispatch({ type: "RESET_USER" }));
   };
 
   useEffect(() => {
@@ -51,11 +53,9 @@ function App() {
         </div>
       )}
       {user && (
-        <>
-          <h2>{user.name}</h2>
-          <p>{user.rol}</p>
-          <button onClick={() => logout()}>Logout</button>
-        </>
+        <Card>
+          <UserProfile logout={logout} />
+        </Card>
       )}
     </>
   );
